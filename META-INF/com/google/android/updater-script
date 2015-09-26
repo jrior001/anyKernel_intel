@@ -1,0 +1,48 @@
+set_progress(0.0);
+ui_print(" ");
+ui_print("Zenfone2 AnyKernel Installer");
+ui_print("   By: jrior001     ");
+ui_print(" ");
+ifelse(is_mounted("/system") == "/system", unmount("/system"));
+ifelse(is_mounted("/cache") == "/cache", unmount("/cache"));
+ui_print("..");
+set_progress(0.1);
+
+ui_print("Extracting files.....");
+package_extract_dir("kernel", "/tmp");
+set_metadata_recursive("/tmp", "uid", 0, "gid", 0, "dmode", 0777, "fmode", 0777);
+set_progress(0.1);
+
+ui_print("Mount partitions...");
+run_program("/sbin/busybox", "mount", "/system");
+run_program("/sbin/busybox", "mount", "/cache");
+set_progress(0.2);
+
+ui_print("Extract old kernel...");
+run_program("/sbin/busybox", "dd", "if=/dev/block/by-name/boot", "of=/tmp/boot.img");
+set_progress(0.5);
+
+ui_print("Extract ramdisk...");
+run_program("/tmp/unpackbootimg", "-i", "/tmp/boot.img", "-o", "/tmp/");
+set_progress(0.65);
+
+ui_print("Unmounting partitions...");
+unmount("/system");
+unmount("/cache");
+set_progress(0.8);
+
+ui_print("Making new boot.img...");
+run_program("/tmp/mkbootimg.sh");
+set_progress(0.9);
+
+ui_print("Flashing new boot.img...");
+run_program("/sbin/busybox", "dd", "if=/tmp/newboot.img", "of=/dev/block/by-name/boot");
+set_progress(0.95);
+
+ui_print("Cleaning up files...");
+delete("/tmp/*");
+set_progress(0.9);
+
+ui_print("");
+ui_print("");
+ui_print("Please reboot");
